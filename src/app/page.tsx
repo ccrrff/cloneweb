@@ -47,7 +47,7 @@ type AppAction =
 
 const initialState: AppState = {
   depth: 1,
-  maxDepth: 3,
+  maxDepth: 0, // depth=1 (singlepage) uses maxDepth=0; updated by SET_DEPTH for other modes
   respectRobots: false,
   jobId: null,
   jobStatus: null,

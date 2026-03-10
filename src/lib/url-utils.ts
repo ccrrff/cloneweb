@@ -86,7 +86,10 @@ export function isSameDomain(urlA: string, urlB: string): boolean {
   try {
     const a = new URL(urlA);
     const b = new URL(urlB);
-    return a.hostname === b.hostname;
+    // Strip 'www.' prefix so www.example.com and example.com are treated as the same
+    const hostA = a.hostname.replace(/^www\./, "");
+    const hostB = b.hostname.replace(/^www\./, "");
+    return hostA === hostB;
   } catch {
     return false;
   }

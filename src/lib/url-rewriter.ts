@@ -38,12 +38,14 @@ function relativePath(fromFile: string, toFile: string): string {
  * @param baseUrl - absolute URL of the page (for resolving relative references)
  * @param fileMap - mutable map of absolute URL → local path (updated in-place)
  * @param currentLocalPath - local path of this HTML file (e.g. "example.com/index.html")
+ * @param rewritePageLinks - if false, <a href> links are kept as absolute URLs (for singlepage mode)
  */
 export function rewriteHtml(
   html: string,
   baseUrl: string,
   fileMap: Map<string, string>,
-  currentLocalPath: string
+  currentLocalPath: string,
+  rewritePageLinks = true
 ): { html: string; urls: Set<string> } {
   const $ = cheerio.load(html);
   const discovered = new Set<string>();
@@ -82,17 +84,21 @@ export function rewriteHtml(
     $(el).attr("href", toRel(resolveLocal(abs)));
   });
 
-  // ── <a href> — collect for crawling, rewrite to local path ───────────────
+  // ── <a href> — collect for crawling, rewrite to local path (or keep absolute) ─
   $("a[href]").each((_, el) => {
     const href = $(el).attr("href");
     if (!href || isDataUri(href) || href.startsWith("#")) return;
     const abs = normalizeUrl(href, baseUrl);
     if (!abs) return;
     discovered.add(abs);
-    if (!fileMap.has(abs)) {
-      fileMap.set(abs, urlToLocalPath(abs));
+    if (rewritePageLinks) {
+      if (!fileMap.has(abs)) {
+        fileMap.set(abs, urlToLocalPath(abs));
+      }
+      $(el).attr("href", toRel(fileMap.get(abs)!));
     }
-    $(el).attr("href", toRel(fileMap.get(abs)!));
+    // When rewritePageLinks=false (singlepage mode), keep original absolute URL
+    // so that internal links in the preview don't become broken local paths.
   });
 
   // ── srcset ────────────────────────────────────────────────────────────────

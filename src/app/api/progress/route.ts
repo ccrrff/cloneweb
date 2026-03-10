@@ -3,6 +3,7 @@ import { jobStore } from "@/lib/job-store";
 import { ProgressEvent } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // SSE connection timeout on Vercel
 
 export async function GET(request: NextRequest) {
   const jobId = request.nextUrl.searchParams.get("jobId");

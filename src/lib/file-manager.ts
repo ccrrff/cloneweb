@@ -1,7 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
 
-const TMP_DIR = path.join(process.cwd(), "tmp");
+// On Vercel (serverless), process.cwd() is read-only at runtime; use /tmp instead.
+// CLONEWEB_TMP env var allows custom override.
+const TMP_DIR =
+  process.env.CLONEWEB_TMP ??
+  (process.env.VERCEL ? "/tmp/cloneweb" : path.join(process.cwd(), "tmp"));
 
 // Ensure TMP_DIR exists
 if (!fs.existsSync(TMP_DIR)) {

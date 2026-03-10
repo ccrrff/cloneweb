@@ -124,6 +124,12 @@ export async function crawl(options: CrawlOptions): Promise<void> {
   const queue: Array<[string, number]> = [[startUrl, 0]];
   visitedPages.add(startUrl);
 
+  // effectiveStartUrl tracks the actual domain after a potential redirect on the start page.
+  // e.g. user enters http://example.com → redirects to https://www.example.com/
+  // Without this, isSameDomain would compare all discovered links against the original URL
+  // and fail, making every depth > 1 behave identically to depth 1 (singlepage).
+  let effectiveStartUrl = startUrl;
+
   // Entry path (local path to the start page)
   const entryLocalPath = urlToLocalPath(startUrl);
   job.entryPath = entryLocalPath;
@@ -190,6 +196,12 @@ export async function crawl(options: CrawlOptions): Promise<void> {
     // Use the final URL (after redirect) as base for correct relative-URL resolution
     const effectivePageUrl = result.finalUrl ?? pageUrl;
 
+    // If the start page redirected (e.g. http→https or no-www→www), update effectiveStartUrl
+    // so that same-domain checks are against the real domain, not the original input URL.
+    if (pageUrl === startUrl && result.finalUrl) {
+      effectiveStartUrl = result.finalUrl;
+    }
+
     // Process HTML pages
     const jj = jobStore.get(jobId);
     if (!jj) break;
@@ -205,7 +217,8 @@ export async function crawl(options: CrawlOptions): Promise<void> {
           htmlStr,
           effectivePageUrl,
           jj.fileMap,
-          localPath
+          localPath,
+          depth > 1  // singlepage: keep <a href> as absolute URLs (no local rewrite)
         );
 
         // Save rewritten HTML
@@ -221,7 +234,7 @@ export async function crawl(options: CrawlOptions): Promise<void> {
             // Pages: add to BFS queue if depth allows and same domain
             if (
               depth >= 2 &&
-              isSameDomain(normalized, startUrl) &&
+              isSameDomain(normalized, effectiveStartUrl) &&
               !visitedPages.has(normalized) &&
               currentDepth < maxDepth &&
               !(respectRobots && isDisallowed(normalized, disallowedPaths))

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const maxDuration = 60; // Vercel: allow background crawl up to 60s (Hobby limit)
 import { v4 as uuidv4 } from "uuid";
 import { validateUrl } from "@/lib/url-utils";
 import { jobStore } from "@/lib/job-store";
