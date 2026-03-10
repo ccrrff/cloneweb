@@ -3,6 +3,8 @@ services:
     name: cloneweb
     runtime: node
     plan: free
+    branch: master
+    autoDeploy: yes
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /
